@@ -76,6 +76,13 @@ class tftp (
     $svc_enable = true
   }
 
+  @firewall { '201 accept TFTP connections':
+    port   => $port,
+    proto  => 'udp',
+    action => 'accept',
+    state  => ['NEW'],
+  }
+
   $start = $provider ? {
     'base'  => "${binary} -l -a ${address}:${port} -u ${username} ${options} ${directory}",
     default => undef

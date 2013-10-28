@@ -36,8 +36,8 @@ describe 'tftp', :type => :class do
   end
 
   describe 'when deploying on redhat family as standalone' do
-    let (:facts) { {  :osfamily         => 'RedHat',
-                      :path             => '/usr/local/bin:/usr/bin:/bin', } }
+    let(:facts) { {  :osfamily         => 'RedHat',
+                     :path             => '/usr/local/bin:/usr/bin:/bin', } }
     let(:params) { {  :inetd  => false, } }
     it {
       should contain_package('tftpd-hpa').with({
@@ -55,20 +55,26 @@ describe 'tftp', :type => :class do
   end
 
   describe 'when deploying on redhat family with custom options as standalone' do
-    let (:facts) { {  :osfamily         => 'RedHat',
-                      :path             => '/usr/local/bin:/usr/bin:/bin', } }
-    let (:params) { { :address          => '127.0.0.1',
-                      :port             => '1069',
-                      :inetd            => false,
-                      :username         => 'root',
-                      :options          => '--secure --timeout 50',
-                      :directory        => '/tftpboot', } }
+    let(:pre_condition) { 'Firewall <| |>' }
+    let(:facts) { {  :osfamily         => 'RedHat',
+                     :path             => '/usr/local/bin:/usr/bin:/bin', } }
+    let(:params) { { :address          => '127.0.0.1',
+                     :port             => '1069',
+                     :inetd            => false,
+                     :username         => 'root',
+                     :options          => '--secure --timeout 50',
+                     :directory        => '/tftpboot', } }
 
     it {
       should contain_package('tftpd-hpa').with({
         'name'      => 'tftp-server',
       })
-
+      should contain_firewall('201 accept TFTP connections').with({
+        :port   => 1069,
+        :proto  => 'udp',
+        :action => 'accept',
+        :state  => ['NEW'],
+      })
       should contain_service('tftpd-hpa').with({
         'ensure'    => 'running',
         'enable'    => 'true',
@@ -80,14 +86,21 @@ describe 'tftp', :type => :class do
   end
 
   describe 'when deploying with xinetd on redhat family' do
-    let (:facts) { {  :osfamily => 'Redhat',
-                      :path     => '/usr/local/bin:/usr/bin:/bin', } }
+    let(:pre_condition) { 'Firewall <| |>' }
+    let(:facts) { {  :osfamily => 'Redhat',
+                     :path     => '/usr/local/bin:/usr/bin:/bin', } }
     it {
       should include_class('xinetd')
       should contain_service('tftpd-hpa').with({
         'ensure'      => 'stopped',
         'enable'      => false,
-    })
+      })
+      should contain_firewall('201 accept TFTP connections').with({
+        :port   => 69,
+        :proto  => 'udp',
+        :action => 'accept',
+        :state  => ['NEW'],
+      })
       should contain_xinetd__service('tftp').with({
         'port'        => '69',
         'protocol'    => 'udp',
@@ -103,9 +116,9 @@ describe 'tftp', :type => :class do
   end
 
   describe 'when deploying with xinetd on ubuntu' do
-    let (:facts) { {  :osfamily         => 'Debian',
-                      :operatingsystem  => 'Ubuntu',
-                      :path     => '/usr/local/bin:/usr/bin:/bin', } }
+    let(:facts) { {  :osfamily         => 'Debian',
+                     :operatingsystem  => 'Ubuntu',
+                     :path     => '/usr/local/bin:/usr/bin:/bin', } }
     it {
       should include_class('xinetd')
       should contain_service('tftpd-hpa').with({
@@ -127,9 +140,9 @@ describe 'tftp', :type => :class do
   end
 
   describe 'when deploying with xinetd on debian' do
-    let (:facts) { {  :osfamily         => 'Debian',
-                      :operatingsystem  => 'Debian',
-                      :path     => '/usr/local/bin:/usr/bin:/bin', } }
+    let(:facts) { {  :osfamily         => 'Debian',
+                     :operatingsystem  => 'Debian',
+                     :path     => '/usr/local/bin:/usr/bin:/bin', } }
     it {
       should include_class('xinetd')
       should contain_xinetd__service('tftp').with({
@@ -148,10 +161,10 @@ describe 'tftp', :type => :class do
   end
 
   describe 'when deploying with xinetd with custom options' do
-    let (:facts) { {  :osfamily         => 'Debian',
-                      :operatingsystem  => 'Debian',
-                      :path     => '/usr/local/bin:/usr/bin:/bin', } }
-    let (:params) { { :options  => '--secure --timeout 50', } }
+    let(:facts) { {  :osfamily         => 'Debian',
+                     :operatingsystem  => 'Debian',
+                     :path     => '/usr/local/bin:/usr/bin:/bin', } }
+    let(:params) { { :options  => '--secure --timeout 50', } }
     it {
       should include_class('xinetd')
       should contain_xinetd__service('tftp').with({
@@ -170,13 +183,13 @@ describe 'tftp', :type => :class do
   end
 
   describe 'when deploying with xinetd with custom settings' do
-    let (:facts) { {  :osfamily         => 'Debian',
-                      :operatingsystem  => 'Debian',
-                      :path       => '/usr/local/bin:/usr/bin:/bin', } }
-    let (:params) { { :port       => 1069,
-                      :address    => '127.0.0.1',
-                      :username   => 'root',
-                      :directory  => '/tftpboot', } }
+    let(:facts) { {  :osfamily         => 'Debian',
+                     :operatingsystem  => 'Debian',
+                     :path       => '/usr/local/bin:/usr/bin:/bin', } }
+    let(:params) { { :port       => 1069,
+                     :address    => '127.0.0.1',
+                     :username   => 'root',
+                     :directory  => '/tftpboot', } }
     it {
       should include_class('xinetd')
       should contain_xinetd__service('tftp').with({
